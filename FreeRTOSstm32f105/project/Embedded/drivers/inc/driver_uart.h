@@ -32,7 +32,8 @@ extern "C"{
 #define UART_BLOCK_TIME	    ( ( TickType_t ) 0xffff )
 
 void Uart1Init(void);
-signed portBASE_TYPE xSerialGetChar(u8 *pcRxedChar, TickType_t xBlockTime );
+signed portBASE_TYPE xSerialGetChar(u8 *pcRxedChar, TickType_t xBlockTime);
+signed portBASE_TYPE xSerialGetBuffer(u8 *pBuf, const int nByteLen, TickType_t xBlockTime);
 signed portBASE_TYPE xSerialPutChar(u8 cOutChar);
 signed portBASE_TYPE xSerialPutBuffer(const u8 *pBuf, const int nByteLen);
 

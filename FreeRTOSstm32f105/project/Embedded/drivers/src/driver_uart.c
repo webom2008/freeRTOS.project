@@ -250,6 +250,21 @@ signed portBASE_TYPE xSerialGetChar(u8 *pcRxedChar, TickType_t xBlockTime )
 	}
 }
 
+signed portBASE_TYPE xSerialGetBuffer(u8 *pBuf, const int nByteLen, TickType_t xBlockTime)
+{
+    signed portBASE_TYPE i = 0;
+    
+    for (i = 0; i < nByteLen; i++)
+    {
+        if (pdTRUE != xSerialGetChar(pBuf, xBlockTime))
+        {
+            return i;
+        }
+        pBuf++;
+    }
+    return i;
+}
+
 signed portBASE_TYPE xSerialPutChar(u8 cOutChar)
 {
     signed portBASE_TYPE xReturn;
