@@ -64,7 +64,7 @@ static int system_init(void)
 {
     version_init();
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
-    xSerialPortInitMinimal(230400);
+    Uart1Init();
     return 0;
 }
 

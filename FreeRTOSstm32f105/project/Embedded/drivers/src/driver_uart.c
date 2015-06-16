@@ -8,7 +8,8 @@
   Author        : qiuweibo
   Created       : 2015/4/9
   Last Modified :
-  Description   : uart driver
+  Description   : DMA1_Channel4 for UART1_Tx
+                  DMA1_Channel5 for UART1_Rx
   Function List :
   History       :
   1.Date        : 2015/4/9
@@ -16,6 +17,7 @@
     Modification: Created file
 
 ******************************************************************************/
+#include <string.h>
 
 #include "defines.h"
 #include "queue.h"
@@ -39,8 +41,11 @@
 /*----------------------------------------------*
  * macros                                       *
  *----------------------------------------------*/
-#define serINVALID_QUEUE		    ( ( QueueHandle_t ) 0 )
-#define serNO_BLOCK			        ( ( TickType_t ) 0 )
+#define UART1_BAUD_RATE         230400
+#define UART1_DATA_REG          (uint32_t)0x40013804
+#define UART1_DMA_TX_BUF_LEN    256
+#define UART1_DMA_RX_BUF_LEN    256
+#define UART1_QUEUE_LEN         1024
 
 /*----------------------------------------------*
  * project-wide global variables                *
@@ -49,7 +54,13 @@
 /*----------------------------------------------*
  * internal variables                           *
  *----------------------------------------------*/
- 
+static u8 USART1_SEND_DATA[UART1_DMA_TX_BUF_LEN];
+static u8 USART1_RECEIVE_DATA[UART1_DMA_RX_BUF_LEN];
+static volatile u8 USART1_TX_Finish = 1;
+static QueueHandle_t xRxedChars = NULL;
+static QueueHandle_t xCharsForTx = NULL;
+
+
 /*----------------------------------------------*
  * internal routine prototypes                  *
  *----------------------------------------------*/
@@ -57,207 +68,11 @@
 /*----------------------------------------------*
  * routines' implementations                    *
  *----------------------------------------------*/
-void vUARTInterruptHandler( void );
 
-
-
-
-//==============================================================================
-#define BUF_OK          0
-#define BUF_FULL        1
-#define BUF_EMPTY       2
-#define BUF_RX_NUM(x,y)    (x)>=(y)?(x-y):(BUFFER_RX_SIZE-(y-x))
-#define BUFFER_RX_SIZE     128
-#define BUFFER_TX_SIZE     512
-typedef unsigned char   BUF_TYPE;
-
-static BUF_TYPE uart_rx_buf[BUFFER_RX_SIZE];
-static BUF_TYPE uart_tx_buf[BUFFER_TX_SIZE];
-
-typedef struct _CIRCULARBUFFER
+static void Uart1InitGPIO(void)
 {
-    BUF_TYPE *buf;
-    int len;
-    int head;
-    int tail;
-
-}CIRCULARBUFFER;
-
-static CIRCULARBUFFER gCirCularRxBuffer;
-static CIRCULARBUFFER *gpCirCularRxBuffer = &gCirCularRxBuffer;
-static CIRCULARBUFFER gCirCularTxBuffer;
-static CIRCULARBUFFER *gpCirCularTxBuffer = &gCirCularTxBuffer;
-
-static int BufferInit(CIRCULARBUFFER *pDev,BUF_TYPE *buf)
-{
-    pDev->buf = buf;
-    pDev->head = 0;
-    pDev->tail = 0;
-    pDev->len = 0;
-    
-    return 0;
-}
-
-static int isBufferFull(CIRCULARBUFFER *pDev, int buf_size)
-{
-    if((pDev->head+1)%buf_size == pDev->tail)
-    {
-        return BUF_FULL;
-    }
-    
-    return BUF_OK;
-}
-
-static int isBufferEmpty(CIRCULARBUFFER *pDev)
-{
-    if(pDev->head != pDev->tail)
-    {
-        return BUF_OK;
-    }
-    return BUF_EMPTY;
-}
-
-static int BufferReInit(void)
-{
-    BufferInit(gpCirCularRxBuffer,uart_rx_buf);
-    BufferInit(gpCirCularTxBuffer,uart_tx_buf);
-    return 0;
-}
-
-static int BufferRxEnqueue(BUF_TYPE data)
-{
-    if(BUF_FULL == isBufferFull(gpCirCularRxBuffer, BUFFER_RX_SIZE))
-    {
-        return BUF_FULL;
-    }
-    
-    gpCirCularRxBuffer->buf[gpCirCularRxBuffer->head] = data;
-    gpCirCularRxBuffer->head = (gpCirCularRxBuffer->head+1)%BUFFER_RX_SIZE;
-
-    return BUF_OK;
-}
-
-static int BufferRxDequeue(BUF_TYPE *pBuf)
-{    
-    if(BUF_EMPTY == isBufferEmpty(gpCirCularRxBuffer))
-    {
-        return BUF_EMPTY;
-    }
-
-    *pBuf = gpCirCularRxBuffer->buf[gpCirCularRxBuffer->tail];
-    gpCirCularRxBuffer->tail = (gpCirCularRxBuffer->tail+1) % BUFFER_RX_SIZE;
-        
-    return BUF_OK;
-}
-
-static int BufferTxEnqueue(BUF_TYPE data)
-{
-    if(BUF_FULL == isBufferFull(gpCirCularTxBuffer, BUFFER_TX_SIZE))
-    {
-        return BUF_FULL;
-    }
-    
-    gpCirCularTxBuffer->buf[gpCirCularTxBuffer->head] = data;
-    gpCirCularTxBuffer->head = (gpCirCularTxBuffer->head+1)%BUFFER_TX_SIZE;
-
-    return BUF_OK;
-}
-
-static int BufferTxDequeue(BUF_TYPE *pBuf)
-{
-    if(BUF_EMPTY == isBufferEmpty(gpCirCularTxBuffer))
-    {
-        return BUF_EMPTY;
-    }
-
-    *pBuf = gpCirCularTxBuffer->buf[gpCirCularTxBuffer->tail];
-    gpCirCularTxBuffer->tail = (gpCirCularTxBuffer->tail+1) % BUFFER_TX_SIZE;
-    return BUF_OK;
-}
-//==============================================================================
-
-/******************************************************************************/
-/*  UART API Start                                                         */
-/******************************************************************************/
-
-int uart_dev_getRxLen(void)
-{    
-    int len = 0;
-    len = BUF_RX_NUM(gpCirCularRxBuffer->head,gpCirCularRxBuffer->tail);
-    return len;
-}
-
-int uart_dev_getByte(u8* pValue)
-{
-    if( BUF_OK == BufferRxDequeue(pValue) )
-    {
-        return 1;
-    }
-    return 0;
-}
-
-int uart_dev_getBuf(u8 *buf)
-{
-    int len = 0;
-    
-    while(len < BUFFER_RX_SIZE)
-    {
-        if(BufferRxDequeue(&buf[len]) == BUF_OK)
-        {
-            len++;
-        }
-        else
-        {
-            break;
-        }
-    }
-    return len;
-}
-
-void uart_dev_sendByte(const u8 u8Byte)
-{
-    BufferTxEnqueue(u8Byte);
-    USART_ITConfig(USART1, USART_IT_TXE, ENABLE); 
-}
-
-void uart_dev_sendBuf(u8* u8Buf, const u16 u16Length)
-{
-    int i = 0;
-    for(i=0; i<u16Length; i++)
-    {
-        BufferTxEnqueue(u8Buf[i]);
-    }
-    USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-}
-/******************************************************************************/
-/*  UART API End                                                         */
-/******************************************************************************/
-
-
-/*****************************************************************************
- Prototype    : xSerialPortInitMinimal
- Description  : init for uart
- Input        : unsigned long ulWantedBaud
- Output       : None
- Return Value : 
- Calls        : 
- Called By    : 
- 
-  History        :
-  1.Date         : 2015/4/9
-    Author       : qiuweibo
-    Modification : Created function
-
-*****************************************************************************/
-xComPortHandle xSerialPortInitMinimal(  unsigned long ulWantedBaud)
-{
-    xComPortHandle xReturn;
-    USART_InitTypeDef USART_InitStructure;
-    NVIC_InitTypeDef NVIC_InitStructure;
     GPIO_InitTypeDef GPIO_InitStructure;
 
-    BufferReInit();
-    
 	/* Enable USART1 clock */
 	RCC_APB2PeriphClockCmd( RCC_APB2Periph_USART1\
 	                        | RCC_APB2Periph_GPIOA\
@@ -273,6 +88,11 @@ xComPortHandle xSerialPortInitMinimal(  unsigned long ulWantedBaud)
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 	GPIO_Init( GPIOA, &GPIO_InitStructure );
+}
+
+static void Uart1InitConfig(unsigned long ulWantedBaud)
+{
+    USART_InitTypeDef USART_InitStructure;
 
 	USART_InitStructure.USART_BaudRate = ulWantedBaud;
 	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
@@ -282,31 +102,98 @@ xComPortHandle xSerialPortInitMinimal(  unsigned long ulWantedBaud)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	
 	USART_Init( USART1, &USART_InitStructure );
-	
-	USART_ITConfig( USART1, USART_IT_RXNE, ENABLE );
-	
-	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = IRQPriority10Uart1;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-	NVIC_Init( &NVIC_InitStructure );
-	
-	USART_Cmd( USART1, ENABLE );
-	xReturn = ( xComPortHandle ) 1;
+    
+    //enable idle interrupt
+    USART_ITConfig(USART1, USART_IT_IDLE , ENABLE);
+    //
+    USART_Cmd(USART1, ENABLE);
 
-	/* This demo file only supports a single port but we have to return
-	something to comply with the standard demo header file. */
-	return xReturn;
+    //fixed CPU bugs: if send data after uart config, the first char don't send.
+    USART_ClearFlag(USART1, USART_FLAG_TC);
 }
 
+static void Uart1InitDMAConfig(void)
+{
+    DMA_InitTypeDef DMA_InitStructure;
+    
+    /* DMA clock enable */
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);//DMA1
+    
+    /* DMA1 Channel4 (triggered by USART1 Tx event) Config */
+    DMA_DeInit(DMA1_Channel4);  
+    DMA_InitStructure.DMA_PeripheralBaseAddr = UART1_DATA_REG;
+    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)USART1_SEND_DATA;
+    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
+    DMA_InitStructure.DMA_BufferSize = UART1_DMA_TX_BUF_LEN;
+    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+    DMA_Init(DMA1_Channel4, &DMA_InitStructure);
+    DMA_ITConfig(DMA1_Channel4, DMA_IT_TC, ENABLE);
+    DMA_ITConfig(DMA1_Channel4, DMA_IT_TE, ENABLE);
+    /* Enable USART1 DMA TX request */
+    USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+    DMA_Cmd(DMA1_Channel4, DISABLE);
+    
+    /* DMA1 Channel5 (triggered by USART1 Rx event) Config */
+    DMA_DeInit(DMA1_Channel5);  
+    DMA_InitStructure.DMA_PeripheralBaseAddr = UART1_DATA_REG;
+    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)USART1_RECEIVE_DATA;
+    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+    DMA_InitStructure.DMA_BufferSize = UART1_DMA_RX_BUF_LEN;
+    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+    DMA_Init(DMA1_Channel5, &DMA_InitStructure);
+    DMA_ITConfig(DMA1_Channel5, DMA_IT_TC, ENABLE);
+    DMA_ITConfig(DMA1_Channel5, DMA_IT_TE, ENABLE);
+
+    /* Enable USART1 DMA RX request */
+    USART_DMACmd(USART1, USART_DMAReq_Rx, ENABLE);
+    DMA_Cmd(DMA1_Channel5, ENABLE);
+}
+
+static void Uart1InitNVICConfig(void)
+{
+    NVIC_InitTypeDef NVIC_InitStructure;
+  
+    // Enable the USART1 Interrupt
+    NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = IRQPriority10Uart1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init( &NVIC_InitStructure );
+
+    //Enable DMA Channel4 Interrupt 
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = IRQPriority12DMA1ch4;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+
+    // Enable DMA Channel5 Interrupt
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel5_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = IRQPriority13DMA1ch5;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+}
+
+
 /*****************************************************************************
- Prototype    : xSerialGetChar
- Description  : get char from uart
- Input        : xComPortHandle pxPort    
-                signed char *pcRxedChar  
-                TickType_t xBlockTime    
+ Prototype    : Uart1Init
+ Description  : init for uart
+ Input        : void
  Output       : None
- Return Value : signed
+ Return Value : 
  Calls        : 
  Called By    : 
  
@@ -316,50 +203,83 @@ xComPortHandle xSerialPortInitMinimal(  unsigned long ulWantedBaud)
     Modification : Created function
 
 *****************************************************************************/
-signed portBASE_TYPE xSerialGetChar( xComPortHandle pxPort, signed char *pcRxedChar, TickType_t xBlockTime )
+void Uart1Init(void)
 {
-	/* The port handle is not required as this driver only supports one port. */
-	( void ) pxPort;
+	/* Create the queues used to hold Rx/Tx characters. */
+	xRxedChars  = xQueueCreate( UART1_QUEUE_LEN, ( unsigned portBASE_TYPE ) sizeof( u8 ) );
+	xCharsForTx = xQueueCreate( UART1_QUEUE_LEN, ( unsigned portBASE_TYPE ) sizeof( u8 ) );
 
+    // Queue was not created and must not be used.
+	do{}while((NULL == xRxedChars) || (NULL == xCharsForTx));
+    
+    Uart1InitGPIO();
+    Uart1InitNVICConfig();
+    Uart1InitDMAConfig();
+	Uart1InitConfig(UART1_BAUD_RATE);
+}
+
+static signed portBASE_TYPE xSerialRxHandleFromISR(u8 *pBuf, const int nByteLen)
+{
+    int i = 0;
+
+    for (i = 0; i < nByteLen; i++)
+    {
+    	if( xQueueSendFromISR( xRxedChars, pBuf, UART_NO_BLOCK ) != pdPASS )
+    	{
+	        return pdFAIL;
+    	}
+        else
+        {
+            pBuf++;
+        }
+    }
+	return pdPASS;
+}
+
+signed portBASE_TYPE xSerialGetChar(u8 *pcRxedChar, TickType_t xBlockTime )
+{
 	/* Get the next character from the buffer.  Return false if no characters
 	are available, or arrive before xBlockTime expires. */
-//	if( xQueueReceive( xRxedChars, pcRxedChar, xBlockTime ) )
-//	{
-//		return pdTRUE;
-//	}
-//	else
+	if( xQueueReceive( xRxedChars, pcRxedChar, xBlockTime ) )
+	{
+		return pdTRUE;
+	}
+	else
 	{
 		return pdFALSE;
 	}
 }
 
-/*****************************************************************************
- Prototype    : xSerialPutChar
- Description  : put char to uart
- Input        : xComPortHandle pxPort  
-                signed char cOutChar   
-                TickType_t xBlockTime  
- Output       : None
- Return Value : signed
- Calls        : 
- Called By    : 
- 
-  History        :
-  1.Date         : 2015/4/9
-    Author       : qiuweibo
-    Modification : Created function
-
-*****************************************************************************/
-signed portBASE_TYPE xSerialPutChar( xComPortHandle pxPort, signed char cOutChar, TickType_t xBlockTime )
+signed portBASE_TYPE xSerialPutChar(u8 cOutChar)
 {
     signed portBASE_TYPE xReturn;
+    BaseType_t res;
+    int nLen = 0;
+    u8 data;
 
-//	if( xQueueSend( xCharsForTx, &cOutChar, xBlockTime ) == pdPASS )
-//	{
-//		xReturn = pdPASS;
-//		USART_ITConfig( USART1, USART_IT_TXE, ENABLE );
-//	}
-//	else
+	if( pdPASS ==  xQueueSend( xCharsForTx, &cOutChar, UART_NO_BLOCK ))
+	{
+		xReturn = pdPASS;
+        if (USART1_TX_Finish) //DMA had finish transfer
+        {
+            do
+            {
+                res = xQueueReceive( xCharsForTx, &data, UART_NO_BLOCK );
+                if( pdPASS == res)
+                {
+                    USART1_SEND_DATA[nLen] = data;
+                    nLen++;
+
+                }
+            } while( pdPASS == res);
+            
+            DMA_Cmd(DMA1_Channel4, DISABLE); //stop DMA before changing data count
+            DMA1_Channel4->CNDTR = nLen; //update len of bytes
+            USART1_TX_Finish = 0;//start DMA transfer set status flag
+            DMA_Cmd(DMA1_Channel4, ENABLE);
+        }
+	}
+	else
 	{
 		xReturn = pdFAIL;
 	}
@@ -367,29 +287,62 @@ signed portBASE_TYPE xSerialPutChar( xComPortHandle pxPort, signed char cOutChar
 	return xReturn;
 }
 
-/*****************************************************************************
- Prototype    : vSerialClose
- Description  : close uart
- Input        : xComPortHandle xPort  
- Output       : None
- Return Value : 
- Calls        : 
- Called By    : 
- 
-  History        :
-  1.Date         : 2015/4/9
-    Author       : qiuweibo
-    Modification : Created function
-
-*****************************************************************************/
-void vSerialClose( xComPortHandle xPort )
+signed portBASE_TYPE xSerialPutBuffer(const u8 *pBuf, const int nByteLen)
 {
-	/* Not supported as not required by the demo application. */
+    signed portBASE_TYPE i = 0;
+    
+    for (i = 0; i < nByteLen; i++)
+    {
+        if (pdPASS != xSerialPutChar(pBuf[i]))
+        {
+            return i;
+        }
+    }
+    return i; 
+}
+
+void USART1_IRQHandler(void)
+{
+    u16 DATA_LEN;
+    u32 tem_reg;
+    
+    // uart idle interrupt
+    if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)
+    {
+        DMA_Cmd(DMA1_Channel5, DISABLE);                //close DMA incase receive data while handling
+        DATA_LEN = UART1_DMA_RX_BUF_LEN - DMA_GetCurrDataCounter(DMA1_Channel5); 
+        
+        if(DATA_LEN > 0)
+        {   
+            // display return func
+            //xSerialPutBuffer(USART1_RECEIVE_DATA, DATA_LEN);
+
+            //push data in quene
+            xSerialRxHandleFromISR(USART1_RECEIVE_DATA, DATA_LEN);
+        }
+        
+        DMA_ClearFlag(DMA1_FLAG_GL5 | DMA1_FLAG_TC5 | DMA1_FLAG_TE5 | DMA1_FLAG_HT5);//clear status flag
+        DMA1_Channel5->CNDTR = UART1_DMA_RX_BUF_LEN;    //restore count
+        DMA_Cmd(DMA1_Channel5, ENABLE);                 //open DMA after handled
+        
+        //clear Idle flag by read SR and DR
+        tem_reg = USART1->SR;
+        tem_reg = USART1->DR;
+        tem_reg = tem_reg; // slove warning 
+    }
+
+    // error happen
+    if(USART_GetITStatus(USART1, USART_IT_PE | USART_IT_FE | USART_IT_NE) != RESET)
+    {
+        USART_ClearITPendingBit(USART1, USART_IT_PE | USART_IT_FE | USART_IT_NE);
+    }
+    
+    USART_ClearITPendingBit(USART1, USART_IT_IDLE);
 }
 
 /*****************************************************************************
- Prototype    : vUARTInterruptHandler
- Description  : uart1 interrupt handler
+ Prototype    : DMA1_Channel5_IRQHandler
+ Description  : DMA1_Channel5 for UART1_Rx
  Input        : void  
  Output       : None
  Return Value : 
@@ -397,39 +350,41 @@ void vSerialClose( xComPortHandle xPort )
  Called By    : 
  
   History        :
-  1.Date         : 2015/4/9
+  1.Date         : 2015/6/16
     Author       : qiuweibo
     Modification : Created function
 
 *****************************************************************************/
-void vUARTInterruptHandler( void )
+void DMA1_Channel5_IRQHandler(void)
 {
-    int ret = 0;
-    u8 temp = 0;
-    
-    if(RESET != USART_GetITStatus(USART1, USART_IT_RXNE))
-    {
-        temp = USART_ReceiveData(USART1);
-        BufferRxEnqueue(temp);
-        if(USART_GetFlagStatus(USART1, USART_FLAG_ORE) != RESET)
-        {
-            USART_ClearFlag(USART1, USART_FLAG_ORE);
-            USART_ReceiveData(USART1);
-        }
-    }
-  
-    if(RESET != USART_GetITStatus(USART1, USART_IT_TXE))
-    {
-        ret = BufferTxDequeue(&temp);
-        if(BUF_OK == ret)
-        {
-            USART_SendData(USART1, temp);
-        }
-        else
-        {
-            USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
-        }
-    }
+    DMA_ClearITPendingBit(DMA1_IT_TC5);
+    DMA_ClearITPendingBit(DMA1_IT_TE5);
+    DMA_Cmd(DMA1_Channel5, DISABLE);            //close DMA incase receive data while handling
+    DMA1_Channel5->CNDTR = UART1_DMA_RX_BUF_LEN;//restore count
+    DMA_Cmd(DMA1_Channel5, ENABLE);             //open DMA after handled
+}
+
+/*****************************************************************************
+ Prototype    : DMA1_Channel4_IRQHandler
+ Description  : DMA1_Channel4 for UART1_Tx
+ Input        : void  
+ Output       : None
+ Return Value : 
+ Calls        : 
+ Called By    : 
+ 
+  History        :
+  1.Date         : 2015/6/16
+    Author       : qiuweibo
+    Modification : Created function
+
+*****************************************************************************/
+void DMA1_Channel4_IRQHandler(void)
+{
+    DMA_ClearITPendingBit(DMA1_IT_TC4);
+    DMA_ClearITPendingBit(DMA1_IT_TE4);
+    DMA_Cmd(DMA1_Channel4, DISABLE);    // close DMA
+    USART1_TX_Finish=1;                 // set finish flag
 }
 
 #if 0
@@ -490,7 +445,7 @@ PUTCHAR_PROTOTYPE
     while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
     {}
 #else //interrupt mode
-    uart_dev_sendByte(ch);
+    xSerialPutChar(ch);
 #endif
     return ch;
 }

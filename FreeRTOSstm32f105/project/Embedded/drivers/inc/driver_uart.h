@@ -28,14 +28,13 @@ extern "C"{
 
 #include "portmacro.h"
 
-typedef void * xComPortHandle;
-#define comRX_BLOCK_TIME			( ( TickType_t ) 0xffff )
-#define comNO_BLOCK					( ( TickType_t ) 0 )
+#define UART_NO_BLOCK	    ( ( TickType_t ) 0 )
+#define UART_BLOCK_TIME	    ( ( TickType_t ) 0xffff )
 
-xComPortHandle xSerialPortInitMinimal(  unsigned long ulWantedBaud);
-signed portBASE_TYPE xSerialGetChar( xComPortHandle pxPort, signed char *pcRxedChar, TickType_t xBlockTime );
-signed portBASE_TYPE xSerialPutChar( xComPortHandle pxPort, signed char cOutChar, TickType_t xBlockTime );
-void vSerialClose( xComPortHandle xPort );
+void Uart1Init(void);
+signed portBASE_TYPE xSerialGetChar(u8 *pcRxedChar, TickType_t xBlockTime );
+signed portBASE_TYPE xSerialPutChar(u8 cOutChar);
+signed portBASE_TYPE xSerialPutBuffer(const u8 *pBuf, const int nByteLen);
 
 #ifdef __cplusplus
 #if __cplusplus
