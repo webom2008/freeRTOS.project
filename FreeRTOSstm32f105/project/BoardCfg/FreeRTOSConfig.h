@@ -99,6 +99,8 @@
 #define configUSE_CO_ROUTINES 		0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
 
+#define configUSE_MUTEXES           1
+
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
 
@@ -109,6 +111,21 @@ to exclude the API function. */
 #define INCLUDE_vTaskSuspend			1
 #define INCLUDE_vTaskDelayUntil			1
 #define INCLUDE_vTaskDelay				1
+
+/* This demo makes use of one or more example stats formatting functions.  These
+format the raw data provided by the uxTaskGetSystemState() function in to human
+readable ASCII form.  See the notes in the implementation of vTaskList() within 
+FreeRTOS/Source/tasks.c for limitations. */
+#define configUSE_STATS_FORMATTING_FUNCTIONS	0
+
+/* The size of the global output buffer that is available for use when there
+are multiple command interpreters running at once (for example, one on a UART
+and one on TCP/IP).  This is done to prevent an output buffer being defined by
+each implementation - which would waste RAM.  In this case, there is only one
+command interpreter running, and it has its own local output buffer, so the
+global buffer is just set to be one byte long as it is not used and should not
+take up unnecessary RAM. */
+#define configCOMMAND_INT_MAX_OUTPUT_SIZE       1
 
 /* This is the raw value as per the Cortex-M3 NVIC.  Values can be 255
 (lowest) to 0 (1?) (highest). */

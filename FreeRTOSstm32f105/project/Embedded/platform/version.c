@@ -41,7 +41,7 @@
 /*----------------------------------------------*
  * internal variables                           *
  *----------------------------------------------*/
-char APP_VERSION[40];
+char APP_VERSION[60];
 
 /*----------------------------------------------*
  * internal routine prototypes                  *
@@ -54,6 +54,8 @@ char APP_VERSION[40];
 void version_init(void)
 {
     memset(APP_VERSION, 0, sizeof(APP_VERSION));
+    strcat(APP_VERSION, VERSION_OS);
+    strcat(APP_VERSION, VERSION_CURSOR);
     strcat(APP_VERSION, VERSION_DATE);
     strcat(APP_VERSION, VERSION_CURSOR);
     strcat(APP_VERSION, VERSION_TIME);

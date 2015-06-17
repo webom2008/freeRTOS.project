@@ -3,30 +3,32 @@
   Copyright (C), 2005-2014, CVTE.
 
  ******************************************************************************
-  File Name     : main.c
+  File Name     : app_cli.c
   Version       : Initial Draft
   Author        : qiuweibo
-  Created       : 2015/4/8
+  Created       : 2015/4/9
   Last Modified :
-  Description   : main
+  Description   : cli server
   Function List :
   History       :
-  1.Date        : 2015/4/8
+  1.Date        : 2015/4/9
     Author      : qiuweibo
     Modification: Created file
 
 ******************************************************************************/
 #include "includes.h"
 
+#include "app_cli.h"
+#include "UartCommandSever.h"
+#include "CLI_Commands.h"
+
 /*----------------------------------------------*
  * external variables                           *
  *----------------------------------------------*/
-extern char APP_VERSION[];
 
 /*----------------------------------------------*
  * external routine prototypes                  *
  *----------------------------------------------*/
-extern void version_init(void);
 
 /*----------------------------------------------*
  * constants                                    *
@@ -35,13 +37,6 @@ extern void version_init(void);
 /*----------------------------------------------*
  * macros                                       *
  *----------------------------------------------*/
-
-#define _MAIN_INFO_
-#ifdef _MAIN_INFO_
-#define MAIN_INFO(fmt, arg...) udprintf("\r\n[Main] "fmt, ##arg)
-#else
-#define MAIN_INFO(fmt, arg...) do{}while(0)
-#endif
 
 /*----------------------------------------------*
  * project-wide global variables                *
@@ -59,50 +54,17 @@ extern void version_init(void);
  * routines' implementations                    *
  *----------------------------------------------*/
 
-
-static int system_init(void)
+int app_cli_init(void)
 {
-    version_init();
-    NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
-    Uart1Init();
+    UartCommandSever_init();
     return 0;
 }
 
-static int platform_init(void)
+int app_cli_start(void)
 {
-    int res = 0;
+    UartCommandSever_start();
     
-    res |= app_led_init();
-    res |= app_serial_init();
-    res |= app_cli_init();
-    return res;
-}
-
-static int startAllApps(void)
-{
-    app_led_start();
-    app_serial_start();
-    app_cli_start();
+    /* Register commands with the FreeRTOS+CLI command interpreter. */
+	vRegisterCLICommands();
     return 0;
 }
-
-int main(void)
-{
-    int res = 0;
-    
-    res |= system_init();
-    res |= platform_init();
-    
-    MAIN_INFO("VERSION:%s",APP_VERSION);
-    if (res)
-    {
-        MAIN_INFO("System Initialize failed!");
-        while(1);
-    }
-    else
-    {
-        startAllApps();
-        vTaskStartScheduler();
-    }
-}
-

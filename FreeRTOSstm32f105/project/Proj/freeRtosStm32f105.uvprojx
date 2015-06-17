@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_CL,USE_STDPERIPH_DRIVER,VECT_OFFSET</Define>
               <Undefine></Undefine>
-              <IncludePath>..\BoardCfg;..\Embedded\drivers\inc;..\Embedded\utilities;..\FreeRTOS\include;..\FreeRTOS\portable\Keil\ARM_CM3;..\StmLib\STM32F10x_StdPeriph_Driver\inc;..\StmLib\CMSIS</IncludePath>
+              <IncludePath>..\BoardCfg;..\Embedded\drivers\inc;..\Embedded\utilities;..\FreeRTOS\include;..\FreeRTOS\portable\Keil\ARM_CM3;..\StmLib\STM32F10x_StdPeriph_Driver\inc;..\StmLib\CMSIS;..\FreeRTOS\FreeRTOS-Plus-CLI</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -748,6 +748,11 @@
               <FileType>5</FileType>
               <FilePath>..\FreeRTOS\include\timers.h</FilePath>
             </File>
+            <File>
+              <FileName>FreeRTOS_CLI.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\FreeRTOS-Plus-CLI\FreeRTOS_CLI.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -867,6 +872,21 @@
               <FileName>app_serial.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Embedded\apps\app_serial.h</FilePath>
+            </File>
+            <File>
+              <FileName>app_cli.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\apps\app_cli.c</FilePath>
+            </File>
+            <File>
+              <FileName>CLI_Commands.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\apps\CLI_Commands.c</FilePath>
+            </File>
+            <File>
+              <FileName>UartCommandSever.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\apps\UartCommandSever.c</FilePath>
             </File>
           </Files>
         </Group>

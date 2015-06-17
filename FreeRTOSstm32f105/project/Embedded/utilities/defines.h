@@ -34,7 +34,8 @@ extern "C"{
 //PRIORITY DEFINES
 #define PRINTF_DEBUG_TASK_PRIORITY  ( tskIDLE_PRIORITY + 1 )
 #define LED_TASK_PRIORITY	        ( tskIDLE_PRIORITY + 2 )
-#define SERIAL_TASK_PRIORITY	    ( tskIDLE_PRIORITY + 3 )
+#define CLI_TASK_PRIORITY           ( tskIDLE_PRIORITY + 3 )
+#define SERIAL_TASK_PRIORITY	    ( tskIDLE_PRIORITY + 4 )
 
 /* QWB:20150411
  * 1.逻辑优先级低于configMAX_SYSCALL_INTERRUPT_PRIORITY可以使用OS_API函数,否则不能使用
@@ -67,6 +68,15 @@ extern "C"{
 #define IRQPriority02unDefine       (KERNEL_INTERRUPT_PRIORITY_BASE - 9) //2
 #define IRQPriority01unDefine       (KERNEL_INTERRUPT_PRIORITY_BASE - 10) //1
 #define IRQPriority00unDefine       (KERNEL_INTERRUPT_PRIORITY_BASE - 11) //0
+
+
+
+
+//ASCLL
+//0x0A - LF (NL line feed, new line)
+//0x0D - CR (carriage return)
+#define CLI_CMD_END_TAG             (u8)(0x0D) //
+
 
 #ifdef __cplusplus
 #if __cplusplus

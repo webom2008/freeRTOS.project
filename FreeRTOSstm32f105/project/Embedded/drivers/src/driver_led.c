@@ -81,12 +81,12 @@ void led_dev_init(Led_TypeDef Led)
 
 void led_dev_on(Led_TypeDef Led)
 {
-    GPIO_PORT[Led]->BSRR = GPIO_PIN[Led];
+    GPIO_PORT[Led]->ODR &= ~GPIO_PIN[Led];
 }
 
 void led_dev_off(Led_TypeDef Led)
 {
-    GPIO_PORT[Led]->BRR = GPIO_PIN[Led];
+    GPIO_PORT[Led]->ODR |= GPIO_PIN[Led];
 }
 
 void led_dev_toggle(Led_TypeDef Led)

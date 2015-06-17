@@ -29,13 +29,18 @@
 /*----------------------------------------------*
  * constants                                    *
  *----------------------------------------------*/
+typedef enum
+{
+    LED_MODE_SINGLE,
+    LED_CTRL_CYCLE,
+} LED_MODE_TypeDef;
 
 /*----------------------------------------------*
  * macros                                       *
  *----------------------------------------------*/
-#define _LED_INFO_
+//#define _LED_INFO_
 #ifdef _LED_INFO_
-#define LED_INFO(fmt, arg...) printf("\r\n[LED] "fmt, ##arg)
+#define LED_INFO(fmt, arg...) udprintf("\r\n[LED] "fmt, ##arg)
 #else
 #define LED_INFO(fmt, arg...) do{}while(0)
 #endif
@@ -47,6 +52,8 @@
 /*----------------------------------------------*
  * internal variables                           *
  *----------------------------------------------*/
+static int led_period = 1000;
+static LED_MODE_TypeDef led_work_mode = LED_CTRL_CYCLE;
 
 /*----------------------------------------------*
  * internal routine prototypes                  *
@@ -55,16 +62,43 @@
 /*----------------------------------------------*
  * routines' implementations                    *
  *----------------------------------------------*/
+
+
+void app_led_ctl(LED_CTRL_TypeDef ctl, int period)
+{
+    if (LED_CTRL_ON == ctl)
+    {
+        led_work_mode = LED_MODE_SINGLE;
+        led_dev_on(LED1);
+    }
+    else if (LED_CTRL_OFF == ctl)
+    {
+        led_work_mode = LED_MODE_SINGLE;
+        led_dev_off(LED1);
+    }
+    else if (LED_CTRL_PERIOD == ctl)
+    {
+        led_period = period;
+        led_work_mode = LED_CTRL_CYCLE;
+        led_dev_toggle(LED1);
+    }
+}
+
+
 static void app_led_task(void *pvParameters)
 {
 	/* Just to stop compiler warnings. */
 	( void ) pvParameters;
     
+    udprintf("\r\n[LED] app_led_task running...");
     for (;;)
     {
-        led_dev_toggle(LED1);
         LED_INFO("running...");
-        vTaskDelay(500 / portTICK_PERIOD_MS); //delay 1s
+        if (LED_CTRL_CYCLE == led_work_mode)
+        {
+            led_dev_toggle(LED1);
+        }
+        vTaskDelay(led_period / portTICK_PERIOD_MS); //delay 1s
     }
 }
 
@@ -76,7 +110,12 @@ int app_led_init(void)
 
 int app_led_start(void)
 {
-    xTaskCreate(app_led_task,"LED Task",128,NULL,LED_TASK_PRIORITY,NULL);
+    xTaskCreate(app_led_task,
+                "LED Task",
+                configMINIMAL_STACK_SIZE,
+                NULL,
+                LED_TASK_PRIORITY,
+                NULL);
     return 0;
 }
 

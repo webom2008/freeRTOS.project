@@ -29,9 +29,10 @@ extern "C"{
 
 const char VERSION_DATE[15] = __DATE__;
 const char VERSION_TIME[12] = __TIME__;
-const char VERSION_NUM[8]   = "V02.00";
+const char VERSION_NUM[8]   = "V00.01";
 const char VERSION_CURSOR[2]= "-";
-
+const char VERSION_OS[20]   = "FreeRTOS V8.2.1";
+    
 #ifdef __cplusplus
 #if __cplusplus
 }

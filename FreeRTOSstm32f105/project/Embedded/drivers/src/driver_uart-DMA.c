@@ -35,6 +35,9 @@
  * macros                                       *
  *----------------------------------------------*/
 #define UART1_BAUD_RATE         230400
+#define UART1_DATA_REG          (uint32_t)0x40013804
+#define UART1_DMA_TX_BUF_LEN    256
+#define UART1_DMA_RX_BUF_LEN    256
 #define UART1_QUEUE_LEN         1024
 
 /*----------------------------------------------*
@@ -44,6 +47,9 @@
 /*----------------------------------------------*
  * internal variables                           *
  *----------------------------------------------*/
+static u8 USART1_SEND_DATA[UART1_DMA_TX_BUF_LEN];
+static u8 USART1_RECEIVE_DATA[UART1_DMA_RX_BUF_LEN];
+static volatile u8 USART1_TX_Finish = 1;
 static xSemaphoreHandle xSerialTxHandleLock = NULL;
 static xSemaphoreHandle xSerialRxHandleLock = NULL;
 
@@ -206,30 +212,63 @@ int xSerialGetBuffer(u8 *pBuf, const int nByteLen)
     return len;
 }
 
+
+static int xSerialRxHandle(u8 *pBuf, const int nByteLen)
+{
+    int i = 0;
+    u8 *pData = pBuf;
+
+    xSemaphoreTake( xSerialRxHandleLock, portMAX_DELAY );
+    for (i = 0; i < nByteLen; i++)
+    {
+        if(BUF_FULL == BufferRxEnqueue(pData[i]))
+        {
+            break;
+        }
+    }
+    xSemaphoreGive( xSerialRxHandleLock );
+	return i;
+}
+
+
 int xSerialPutChar(u8 cOutChar)
 {
-    int xReturn;
-    
+    int xReturn, res, nLen = 0;
+    u8 data;
     xSemaphoreTake( xSerialTxHandleLock, portMAX_DELAY );
     
 	if(BUF_OK == BufferTxEnqueue(cOutChar))
 	{
 		xReturn = 1;
-        USART_ITConfig(USART1, USART_IT_TXE, ENABLE); 
+        if (USART1_TX_Finish) //DMA had finish transfer
+        {
+            do
+            {
+                res = BufferTxDequeue(&data);
+                if( BUF_OK == res)
+                {
+                    USART1_SEND_DATA[nLen++] = data;
+                }
+            } while(( BUF_OK == res) && (nLen <= UART1_DMA_TX_BUF_LEN));
+            
+            DMA_Cmd(DMA1_Channel4, DISABLE); //stop DMA before changing data count
+            DMA1_Channel4->CNDTR = nLen; //update len of bytes
+            USART1_TX_Finish = 0;//start DMA transfer set status flag
+            DMA_Cmd(DMA1_Channel4, ENABLE);
+        }
 	}
 	else
 	{
 		xReturn = 0;
 	}
-    
     xSemaphoreGive( xSerialTxHandleLock );
-    
 	return xReturn;
 }
 
 int xSerialPutBuffer(const u8 *pBuf, const int nByteLen)
 {
-    int xReturn, i;
+    int xReturn, i, nLen = 0;
+    u8 data;
     const u8 *pData = pBuf;
     
     xSemaphoreTake( xSerialTxHandleLock, portMAX_DELAY );
@@ -243,8 +282,29 @@ int xSerialPutBuffer(const u8 *pBuf, const int nByteLen)
         }
     }
     xReturn = i;
-    USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
     
+    if (USART1_TX_Finish) //DMA had finish transfer
+    {
+        for (i = 0; i < UART1_DMA_TX_BUF_LEN; i++)
+        {
+            if(BUF_OK == BufferTxDequeue(&data))
+            {
+                USART1_SEND_DATA[nLen++] = data;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        if (nLen > 0)
+        {
+            DMA_Cmd(DMA1_Channel4, DISABLE);//stop DMA before changing data count
+            DMA1_Channel4->CNDTR = nLen;    //update len of bytes
+            USART1_TX_Finish = 0;           //start DMA transfer set status flag
+            DMA_Cmd(DMA1_Channel4, ENABLE);
+        }
+    }
     xSemaphoreGive( xSerialTxHandleLock );
 	return xReturn;
 }
@@ -284,7 +344,62 @@ static void Uart1InitConfig(unsigned long ulWantedBaud)
 	
 	USART_Init( USART1, &USART_InitStructure );
     
+    //enable idle interrupt
+    USART_ITConfig(USART1, USART_IT_IDLE , ENABLE);
+    //
     USART_Cmd(USART1, ENABLE);
+
+    //fixed CPU bugs: if send data after uart config, the first char don't send.
+    USART_ClearFlag(USART1, USART_FLAG_TC);
+}
+
+static void Uart1InitDMAConfig(void)
+{
+    DMA_InitTypeDef DMA_InitStructure;
+    
+    /* DMA clock enable */
+    RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);//DMA1
+    
+    /* DMA1 Channel4 (triggered by USART1 Tx event) Config */
+    DMA_DeInit(DMA1_Channel4);  
+    DMA_InitStructure.DMA_PeripheralBaseAddr = UART1_DATA_REG;
+    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)USART1_SEND_DATA;
+    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
+    DMA_InitStructure.DMA_BufferSize = UART1_DMA_TX_BUF_LEN;
+    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+    DMA_Init(DMA1_Channel4, &DMA_InitStructure);
+    DMA_ITConfig(DMA1_Channel4, DMA_IT_TC, ENABLE);
+    DMA_ITConfig(DMA1_Channel4, DMA_IT_TE, ENABLE);
+    /* Enable USART1 DMA TX request */
+    USART_DMACmd(USART1, USART_DMAReq_Tx, ENABLE);
+    DMA_Cmd(DMA1_Channel4, DISABLE);
+    
+    /* DMA1 Channel5 (triggered by USART1 Rx event) Config */
+    DMA_DeInit(DMA1_Channel5);  
+    DMA_InitStructure.DMA_PeripheralBaseAddr = UART1_DATA_REG;
+    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)USART1_RECEIVE_DATA;
+    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+    DMA_InitStructure.DMA_BufferSize = UART1_DMA_RX_BUF_LEN;
+    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
+    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
+    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+    DMA_Init(DMA1_Channel5, &DMA_InitStructure);
+    DMA_ITConfig(DMA1_Channel5, DMA_IT_TC, ENABLE);
+    DMA_ITConfig(DMA1_Channel5, DMA_IT_TE, ENABLE);
+
+    /* Enable USART1 DMA RX request */
+    USART_DMACmd(USART1, USART_DMAReq_Rx, ENABLE);
+    DMA_Cmd(DMA1_Channel5, ENABLE);
 }
 
 static void Uart1InitNVICConfig(void)
@@ -297,7 +412,20 @@ static void Uart1InitNVICConfig(void)
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init( &NVIC_InitStructure );
-    USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+
+    //Enable DMA Channel4 Interrupt 
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = IRQPriority12DMA1ch4;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+
+    // Enable DMA Channel5 Interrupt
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel5_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = IRQPriority13DMA1ch5;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
 
 
@@ -324,38 +452,108 @@ void Uart1Init(void)
 
 	BufferReInit();    
     Uart1InitGPIO();
-	Uart1InitConfig(UART1_BAUD_RATE);
     Uart1InitNVICConfig();
+    Uart1InitDMAConfig();
+	Uart1InitConfig(UART1_BAUD_RATE);
+}
+
+static signed portBASE_TYPE xSerialLoopback(const u8 *pBuf, const int nByteLen)
+{
+    if (nByteLen >= UART1_DMA_TX_BUF_LEN) return 0;
+    
+    memcpy(USART1_SEND_DATA, pBuf, nByteLen);
+    DMA_Cmd(DMA1_Channel4, DISABLE); //stop DMA before changing data count
+    DMA1_Channel4->CNDTR = nByteLen; //update len of bytes
+    USART1_TX_Finish = 0;//start DMA transfer set status flag
+    DMA_Cmd(DMA1_Channel4, ENABLE);
+    
+    return nByteLen;
 }
 
 void USART1_IRQHandler(void)
 {
-    int ret = 0;
-    u8 temp = 0;
+    u16 DATA_LEN;
+    u32 tem_reg;
     
-    if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
+    // uart idle interrupt
+    if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)
     {
-        temp = USART_ReceiveData(USART1);
-        BufferRxEnqueue(temp);
-        if(USART_GetFlagStatus(USART1, USART_FLAG_ORE) != RESET)
-        {
-            USART_ClearFlag(USART1, USART_FLAG_ORE);
-            USART_ReceiveData(USART1);
+        DMA_Cmd(DMA1_Channel5, DISABLE);                //close DMA incase receive data while handling
+        DATA_LEN = UART1_DMA_RX_BUF_LEN - DMA_GetCurrDataCounter(DMA1_Channel5); 
+        
+        if(DATA_LEN > 0)
+        {   
+            // display return func
+            //xSerialPutBuffer(USART1_RECEIVE_DATA, DATA_LEN);
+
+            //push data in quene
+            xSerialRxHandle(USART1_RECEIVE_DATA, DATA_LEN);
         }
+        
+        DMA_ClearFlag(DMA1_FLAG_GL5 | DMA1_FLAG_TC5 | DMA1_FLAG_TE5 | DMA1_FLAG_HT5);//clear status flag
+        DMA1_Channel5->CNDTR = UART1_DMA_RX_BUF_LEN;    //restore count
+        DMA_Cmd(DMA1_Channel5, ENABLE);                 //open DMA after handled
+        
+        //clear Idle flag by read SR and DR
+        tem_reg = USART1->SR;
+        tem_reg = USART1->DR;
+        tem_reg = tem_reg; // slove warning 
     }
-  
-    if(USART_GetITStatus(USART1, USART_IT_TXE) != RESET)
+
+    // error happen
+    if(USART_GetITStatus(USART1, USART_IT_PE | USART_IT_FE | USART_IT_NE) != RESET)
     {
-        ret = BufferTxDequeue(&temp);
-        if(ret == BUF_OK)
-        {
-            USART_SendData(USART1, temp);
-        }
-        else
-        {
-            USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
-        }
+        USART_ClearITPendingBit(USART1, USART_IT_PE | USART_IT_FE | USART_IT_NE);
     }
+    
+    USART_ClearITPendingBit(USART1, USART_IT_IDLE);
+}
+
+/*****************************************************************************
+ Prototype    : DMA1_Channel5_IRQHandler
+ Description  : DMA1_Channel5 for UART1_Rx
+ Input        : void  
+ Output       : None
+ Return Value : 
+ Calls        : 
+ Called By    : 
+ 
+  History        :
+  1.Date         : 2015/6/16
+    Author       : qiuweibo
+    Modification : Created function
+
+*****************************************************************************/
+void DMA1_Channel5_IRQHandler(void)
+{
+    DMA_ClearITPendingBit(DMA1_IT_TC5);
+    DMA_ClearITPendingBit(DMA1_IT_TE5);
+    DMA_Cmd(DMA1_Channel5, DISABLE);            //close DMA incase receive data while handling
+    DMA1_Channel5->CNDTR = UART1_DMA_RX_BUF_LEN;//restore count
+    DMA_Cmd(DMA1_Channel5, ENABLE);             //open DMA after handled
+}
+
+/*****************************************************************************
+ Prototype    : DMA1_Channel4_IRQHandler
+ Description  : DMA1_Channel4 for UART1_Tx
+ Input        : void  
+ Output       : None
+ Return Value : 
+ Calls        : 
+ Called By    : 
+ 
+  History        :
+  1.Date         : 2015/6/16
+    Author       : qiuweibo
+    Modification : Created function
+
+*****************************************************************************/
+void DMA1_Channel4_IRQHandler(void)
+{
+    DMA_ClearITPendingBit(DMA1_IT_TC4);
+    DMA_ClearITPendingBit(DMA1_IT_TE4);
+    DMA_Cmd(DMA1_Channel4, DISABLE);    // close DMA
+    USART1_TX_Finish=1;                 // set finish flag
 }
 
 #if 1 // user define printf

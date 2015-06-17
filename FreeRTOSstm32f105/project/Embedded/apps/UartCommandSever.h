@@ -3,22 +3,21 @@
   Copyright (C), 2005-2014, CVTE.
 
  ******************************************************************************
-  File Name     : includes.h
+  File Name     : UartCommandSever.h
   Version       : Initial Draft
   Author        : qiuweibo
-  Created       : 2015/4/8
+  Created       : 2015/4/9
   Last Modified :
-  Description   : includes.h header file
+  Description   : UartCommandSever.c header file
   Function List :
   History       :
-  1.Date        : 2015/4/8
+  1.Date        : 2015/4/9
     Author      : qiuweibo
     Modification: Created file
 
 ******************************************************************************/
-
-#ifndef __INCLUDES_H__
-#define __INCLUDES_H__
+#ifndef __UARTCOMMANDSEVER_H__
+#define __UARTCOMMANDSEVER_H__
 
 
 #ifdef __cplusplus
@@ -27,22 +26,8 @@ extern "C"{
 #endif
 #endif /* __cplusplus */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "defines.h"
-#include "queue.h"
-#include "list.h"
-#include "semphr.h"
-
-#include "stm32f10x.h"
-#include "driver_uart.h"
-#include "../apps/app_led.h"
-#include "../apps/app_serial.h"
-#include "../apps/UartCommandSever.h"
-#include "../apps/CLI_Commands.h"
-#include "../apps/app_cli.h"
+extern int UartCommandSever_init(void);
+extern int UartCommandSever_start(void);
 
 #ifdef __cplusplus
 #if __cplusplus
@@ -51,5 +36,4 @@ extern "C"{
 #endif /* __cplusplus */
 
 
-#endif /* __INCLUDES_H__ */
-
+#endif /* __UARTCOMMANDSEVER_H__ */

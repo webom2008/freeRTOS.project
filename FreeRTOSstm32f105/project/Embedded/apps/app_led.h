@@ -26,8 +26,16 @@ extern "C"{
 #endif
 #endif /* __cplusplus */
 
+typedef enum
+{
+    LED_CTRL_ON,
+    LED_CTRL_OFF,
+    LED_CTRL_PERIOD,
+} LED_CTRL_TypeDef;
+
 extern int app_led_init(void);
 extern int app_led_start(void);
+extern void app_led_ctl(LED_CTRL_TypeDef ctl, int period);
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -28,14 +28,12 @@ extern "C"{
 
 #include "portmacro.h"
 
-#define UART_NO_BLOCK	    ( ( TickType_t ) 0 )
-#define UART_BLOCK_TIME	    ( ( TickType_t ) 0xffff )
-
 void Uart1Init(void);
-signed portBASE_TYPE xSerialGetChar(u8 *pcRxedChar, TickType_t xBlockTime);
-signed portBASE_TYPE xSerialGetBuffer(u8 *pBuf, const int nByteLen, TickType_t xBlockTime);
-signed portBASE_TYPE xSerialPutChar(u8 cOutChar);
-signed portBASE_TYPE xSerialPutBuffer(const u8 *pBuf, const int nByteLen);
+int xSerialGetChar(u8 *pcRxedChar);
+int xSerialGetBuffer(u8 *pBuf, const int nByteLen);
+int xSerialPutChar(u8 cOutChar);
+int xSerialPutBuffer(const u8 *pBuf, const int nByteLen);
+int udprintf(const char* fmt, ...);
 
 #ifdef __cplusplus
 #if __cplusplus

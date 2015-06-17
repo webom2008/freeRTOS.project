@@ -229,7 +229,8 @@ int xSerialPutChar(u8 cOutChar)
 
 int xSerialPutBuffer(const u8 *pBuf, const int nByteLen)
 {
-    int xReturn, i;
+    int xReturn, i, nLen = 0;
+    u8 data;
     const u8 *pData = pBuf;
     
     xSemaphoreTake( xSerialTxHandleLock, portMAX_DELAY );
