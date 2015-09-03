@@ -890,6 +890,21 @@
             </File>
           </Files>
         </Group>
+        <Group>
+          <GroupName>Apps</GroupName>
+          <Files>
+            <File>
+              <FileName>uart_driver_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\apps\uart_driver_test.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart_driver_test.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Embedded\apps\uart_driver_test.h</FilePath>
+            </File>
+          </Files>
+        </Group>
       </Groups>
     </Target>
   </Targets>

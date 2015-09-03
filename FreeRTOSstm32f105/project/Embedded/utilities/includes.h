@@ -50,6 +50,9 @@ extern "C"{
 
 
 //includes apps headers
+#include "../apps/uart_driver_test.h"
+
+
 
 #ifdef __cplusplus
 #if __cplusplus
