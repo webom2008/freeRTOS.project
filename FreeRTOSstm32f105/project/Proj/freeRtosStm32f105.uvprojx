@@ -749,9 +749,14 @@
               <FilePath>..\FreeRTOS\include\timers.h</FilePath>
             </File>
             <File>
-              <FileName>FreeRTOS_CLI.c</FileName>
+              <FileName>event_groups.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\FreeRTOS\FreeRTOS-Plus-CLI\FreeRTOS_CLI.c</FilePath>
+              <FilePath>..\FreeRTOS\event_groups.c</FilePath>
+            </File>
+            <File>
+              <FileName>timers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FreeRTOS\timers.c</FilePath>
             </File>
           </Files>
         </Group>

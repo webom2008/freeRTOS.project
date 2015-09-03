@@ -38,6 +38,8 @@ extern "C"{
 #include "queue.h"
 #include "list.h"
 #include "semphr.h"
+#include "timers.h"
+#include "event_groups.h"
 
 //incudes stm32 headers
 #include "stm32f10x.h"

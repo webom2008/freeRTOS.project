@@ -30,6 +30,13 @@ extern "C"{
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "sysconfigs.h"
+
+
+
+
+
+
 
 //PRIORITY DEFINES
 #define TEST_DRIVERS_TASK_PRIORITY  ( tskIDLE_PRIORITY + 1 )
@@ -47,8 +54,8 @@ extern "C"{
 
 //lower number, higher priority
 //1.The follow Priority can't use OS_API 
-#define IRQPriority12DMA1ch4         (KERNEL_INTERRUPT_PRIORITY_BASE + 1) //12
-#define IRQPriority13DMA1ch5         (KERNEL_INTERRUPT_PRIORITY_BASE + 2) //13
+#define IRQPriority12unDefine        (KERNEL_INTERRUPT_PRIORITY_BASE + 1) //12
+#define IRQPriority13unDefine        (KERNEL_INTERRUPT_PRIORITY_BASE + 2) //13
 #define IRQPriority14unDefine        (KERNEL_INTERRUPT_PRIORITY_BASE + 3) //14
 #define IRQPriority15unDefine        (KERNEL_INTERRUPT_PRIORITY_BASE + 4) //15
 
@@ -75,6 +82,8 @@ extern "C"{
 #define CLI_CMD_END_TAG             (u8)(0x0D) //
 
 
+#define MyMini(a,b)                 (a)>(b) ? (b):(a)
+#define MyMaxi(a,b)                 (a)>(b) ? (a):(b)
 
 #ifdef __cplusplus
 #if __cplusplus

@@ -273,12 +273,13 @@ static int UartCommonDMAConfig(const UART_DEVICE_TypeDef *pUartDevice)
 {
     DMA_Channel_TypeDef *UARTx_Tx_DMA;
     DMA_Channel_TypeDef *UARTx_Rx_DMA;
-    DMA_InitTypeDef DMA_InitStructure;
-
+    DMA_InitTypeDef DMA_InitStruct;
     if ((NULL == pUartDevice->pTxDMABuffer) \
         || (NULL == pUartDevice->pRxDMABuffer) \
-        || (NULL == pUartDevice->pTxDMABuffer->pBuffer) \
-        || (NULL == pUartDevice->pRxDMABuffer->pBuffer))
+        || (NULL == pUartDevice->pTxDMABuffer->pPingPongBuff1) \
+        || (NULL == pUartDevice->pTxDMABuffer->pPingPongBuff2) \
+        || (NULL == pUartDevice->pRxDMABuffer->pPingPongBuff1)\
+        || (NULL == pUartDevice->pRxDMABuffer->pPingPongBuff2))
     {
         return -1;
     }
@@ -319,45 +320,48 @@ static int UartCommonDMAConfig(const UART_DEVICE_TypeDef *pUartDevice)
         return -1;
     }
     
-    DMA_DeInit(UARTx_Tx_DMA);  
-    DMA_InitStructure.DMA_PeripheralBaseAddr = UART_GPIO[pUartDevice->num].DataRegister;
-    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)pUartDevice->pTxDMABuffer->pBuffer;
-    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-    DMA_InitStructure.DMA_BufferSize = pUartDevice->pTxDMABuffer->bytes;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_Init(UARTx_Tx_DMA, &DMA_InitStructure);
+    DMA_DeInit(UARTx_Tx_DMA);
+    DMA_StructInit(&DMA_InitStruct);
+    DMA_InitStruct.DMA_PeripheralBaseAddr = UART_GPIO[pUartDevice->num].DataRegister;
+    DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)pUartDevice->pTxDMABuffer->pPingPongBuff1;
+    DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralDST;
+    DMA_InitStruct.DMA_BufferSize = pUartDevice->pTxDMABuffer->nBuff1MaxLength;
+    DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;//send once  //DMA_Mode_Normal, DMA_Mode_Circular
+    DMA_InitStruct.DMA_Priority = DMA_Priority_High;
+    DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;
+    DMA_Init(UARTx_Tx_DMA, &DMA_InitStruct);
     DMA_ITConfig(UARTx_Tx_DMA, DMA_IT_TC, ENABLE);
-    DMA_ITConfig(UARTx_Tx_DMA, DMA_IT_TE, ENABLE);
+//    DMA_ITConfig(UARTx_Tx_DMA, DMA_IT_TE, ENABLE);
     
-    /* Enable USARTx DMA TX request */
     USART_DMACmd(UART_GPIO[pUartDevice->num].UARTx, USART_DMAReq_Tx, ENABLE);
-    DMA_Cmd(UARTx_Tx_DMA, DISABLE);
+    DMA_Cmd(UARTx_Tx_DMA, DISABLE); //NOTE: Start by usr when need send data
+    pUartDevice->pTxDMABuffer->IsDMAWroking = 0;
     
-    DMA_DeInit(UARTx_Rx_DMA);  
-    DMA_InitStructure.DMA_PeripheralBaseAddr = UART_GPIO[pUartDevice->num].DataRegister;
-    DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)pUartDevice->pRxDMABuffer->pBuffer;
-    DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
-    DMA_InitStructure.DMA_BufferSize = pUartDevice->pRxDMABuffer->bytes;
-    DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
-    DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
-    DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
-    DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
-    DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;
-    DMA_InitStructure.DMA_Priority = DMA_Priority_High;
-    DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-    DMA_Init(UARTx_Rx_DMA, &DMA_InitStructure);
+    DMA_DeInit(UARTx_Rx_DMA);
+    DMA_StructInit(&DMA_InitStruct);
+    DMA_InitStruct.DMA_PeripheralBaseAddr = UART_GPIO[pUartDevice->num].DataRegister;
+    DMA_InitStruct.DMA_MemoryBaseAddr = (uint32_t)pUartDevice->pRxDMABuffer->pPingPongBuff1;
+    DMA_InitStruct.DMA_DIR = DMA_DIR_PeripheralSRC;
+    DMA_InitStruct.DMA_BufferSize = pUartDevice->pRxDMABuffer->nBuff1MaxLength;
+    DMA_InitStruct.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+    DMA_InitStruct.DMA_MemoryInc = DMA_MemoryInc_Enable;
+    DMA_InitStruct.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+    DMA_InitStruct.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+    DMA_InitStruct.DMA_Mode = DMA_Mode_Normal;//received once  //DMA_Mode_Normal, DMA_Mode_Circular
+    DMA_InitStruct.DMA_Priority = DMA_Priority_High;
+    DMA_InitStruct.DMA_M2M = DMA_M2M_Disable;
+    DMA_Init(UARTx_Rx_DMA, &DMA_InitStruct);
     DMA_ITConfig(UARTx_Rx_DMA, DMA_IT_TC, ENABLE);
-    DMA_ITConfig(UARTx_Rx_DMA, DMA_IT_TE, ENABLE);
+//    DMA_ITConfig(UARTx_Rx_DMA, DMA_IT_TE, ENABLE);
 
     /* Enable USARTx DMA RX request */
     USART_DMACmd(UART_GPIO[pUartDevice->num].UARTx, USART_DMAReq_Rx, ENABLE);
     DMA_Cmd(UARTx_Rx_DMA, ENABLE);
+    pUartDevice->pRxDMABuffer->IsDMAWroking = 1;
     return 0;
 }
 
