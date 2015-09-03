@@ -76,7 +76,7 @@ static int platform_init(void)
 
 static int startAllApps(void)
 {
-    uart_driver_test();
+    drivers_test_start();
     return 0;
 }
 

@@ -3,12 +3,12 @@
   Copyright (C), 2001-2011, DCN Co., Ltd.
 
  ******************************************************************************
-  File Name     : uart_driver_test.c
+  File Name     : uart1_test.c
   Version       : Initial Draft
   Author        : qiuweibo
   Created       : 2015/9/3
   Last Modified :
-  Description   : uart driver test app
+  Description   : test for uart1
   Function List :
   History       :
   1.Date        : 2015/9/3
@@ -16,7 +16,7 @@
     Modification: Created file
 
 ******************************************************************************/
-#include "includes.h"
+
 /*----------------------------------------------*
  * external variables                           *
  *----------------------------------------------*/
@@ -35,6 +35,8 @@ extern EventGroupHandle_t xUart1RxEventGroup;
 /*----------------------------------------------*
  * project-wide global variables                *
  *----------------------------------------------*/
+static u32 test_uart1_rx_count;
+static u32 test_uart1_tx_count;
 
 /*----------------------------------------------*
  * module-wide global variables                 *
@@ -47,6 +49,13 @@ extern EventGroupHandle_t xUart1RxEventGroup;
 /*----------------------------------------------*
  * macros                                       *
  *----------------------------------------------*/
+
+#define _TEST_INFO_
+#ifdef _TEST_INFO_
+#define TEST_INFO(fmt, arg...) udprintf("\r\n[TEST] "fmt, ##arg)
+#else
+#define TEST_INFO(fmt, arg...) do{}while(0)
+#endif
 
 /*----------------------------------------------*
  * routines' implementations                    *
@@ -68,28 +77,29 @@ static void uart_driver_task(void *pvParameters)
     udprintf("\r\n[TEST] uart_driver_task running...");
     for (;;)
     {
-        udprintf("\r\n>>uart_driver_task :%d",test_count++);
-        Uart1Write("\r\n>>Uart1Write Testing...",
-            strlen("\r\n>>Uart1Write Testing..."));
+        TEST_INFO(">>uart_driver_task :%d",test_count++);
+        TEST_INFO(">>Uart1Write Testing...");
 #ifdef CONFIG_UART1_INT_MODE
-        udprintf("\r\n>>Uart1Read :");
+        TEST_INFO(">>Uart1Read :");
         memset(rBuf, 0x00, sizeof(rBuf));
         rLen = Uart1Read(rBuf, sizeof(rBuf));
         if (rLen > 0)
         {
-            udprintf("rLen=%d :",rLen);
+            TEST_INFO("rLen=%d :",rLen);
             if (rLen >= sizeof(rBuf)) rLen = sizeof(rBuf) -1;
             rBuf[rLen] = '\0';
-            udprintf("%s",rBuf);
+            TEST_INFO("%s",rBuf);
         }
         else
         {
-            udprintf("Empty");
+            TEST_INFO("Empty");
         }
 #endif
+        udprintf("\r\ntotoal read count=%d",test_uart1_rx_count);
         vTaskDelay(xTicksToWait);
     }
 }
+
 
 #ifdef CONFIG_UART1_DMA_MODE
 static void uart1_unpack_task(void *pvParameters)
@@ -117,12 +127,14 @@ static void uart1_unpack_task(void *pvParameters)
 		if( ( uxBits & UART1_DMA_RX_COMPLETE_EVENT_BIT ) != 0 )
 		{
             rLen = Uart1Read(rBuf, sizeof(rBuf));
-            udprintf("\r\n[TEST] Uart1Read COMPLETE rLen=%d",rLen);
+            test_uart1_rx_count += rLen;
+            TEST_INFO("Uart1Read COMPLETE rLen=%d",rLen);
 		}
 		else if( ( uxBits & UART1_DMA_RX_INCOMPLETE_EVENT_BIT ) != 0 )
 		{
             rLen = Uart1Read(rBuf, sizeof(rBuf));
-            udprintf("\r\n[TEST] Uart1Read INCOMPLETE rLen=%d",rLen);
+            test_uart1_rx_count += rLen;
+            TEST_INFO("Uart1Read INCOMPLETE rLen=%d",rLen);
 		}
 		else
 		{
@@ -130,23 +142,3 @@ static void uart1_unpack_task(void *pvParameters)
     }
 }
 #endif
-
-int uart_driver_test(void)
-{
-    xTaskCreate(uart_driver_task,
-                "uart_driver_task",
-                configMINIMAL_STACK_SIZE,
-                NULL,
-                TEST_DRIVERS_TASK_PRIORITY,
-                NULL);
-#ifdef CONFIG_UART1_DMA_MODE
-    xTaskCreate(uart1_unpack_task,
-                "uart1_unpack_task",
-                configMINIMAL_STACK_SIZE,
-                NULL,
-                TEST_DRIVERS_TASK_PRIORITY,
-                NULL);
-#endif
-    return 0;
-}
-

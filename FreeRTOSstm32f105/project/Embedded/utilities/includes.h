@@ -52,7 +52,7 @@ extern "C"{
 
 
 //includes apps headers
-#include "../apps/uart_driver_test.h"
+#include "../apps/drivers_test.h"
 
 
 

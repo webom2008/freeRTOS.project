@@ -899,14 +899,9 @@
           <GroupName>Apps</GroupName>
           <Files>
             <File>
-              <FileName>uart_driver_test.c</FileName>
+              <FileName>drivers_test.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Embedded\apps\uart_driver_test.c</FilePath>
-            </File>
-            <File>
-              <FileName>uart_driver_test.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Embedded\apps\uart_driver_test.h</FilePath>
+              <FilePath>..\Embedded\apps\drivers_test.c</FilePath>
             </File>
           </Files>
         </Group>
