@@ -64,25 +64,18 @@ static int system_init(void)
 {
     version_init();
     NVIC_PriorityGroupConfig( NVIC_PriorityGroup_4 );
-    Uart1Init();
     return 0;
 }
 
 static int platform_init(void)
 {
     int res = 0;
-    
-    res |= app_led_init();
-    res |= app_serial_init();
-    res |= app_cli_init();
+    res = DriverMoudleInit();
     return res;
 }
 
 static int startAllApps(void)
 {
-    app_led_start();
-    app_serial_start();
-    app_cli_start();
     return 0;
 }
 

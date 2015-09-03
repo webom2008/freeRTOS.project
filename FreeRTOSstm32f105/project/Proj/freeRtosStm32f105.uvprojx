@@ -123,7 +123,7 @@
             <Oh166RecLen>16</Oh166RecLen>
           </OPTHX>
           <Simulator>
-            <UseSimulator>1</UseSimulator>
+            <UseSimulator>0</UseSimulator>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -135,7 +135,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Simulator>
           <Target>
-            <UseTarget>0</UseTarget>
+            <UseTarget>1</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
             <RunToMain>0</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
@@ -147,7 +147,7 @@
             <RestoreSysVw>1</RestoreSysVw>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>1</TargetSelection>
+          <TargetSelection>6</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -161,7 +161,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>BIN\UL2CM3.DLL</Driver>
+            <Driver>Segger\JL2CM3.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -170,12 +170,12 @@
             <UseExternalTool>0</UseExternalTool>
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
-            <Capability>0</Capability>
-            <DriverSelection>-1</DriverSelection>
+            <Capability>1</Capability>
+            <DriverSelection>4099</DriverSelection>
           </Flash1>
           <bUseTDR>0</bUseTDR>
-          <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash2>Segger\JL2CM3.dll</Flash2>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -309,8 +309,8 @@
               </OCR_RVCT3>
               <OCR_RVCT4>
                 <Type>1</Type>
-                <StartAddress>0x8004000</StartAddress>
-                <Size>0x1c000</Size>
+                <StartAddress>0x8000000</StartAddress>
+                <Size>0x20000</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -363,9 +363,9 @@
             <useXO>0</useXO>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>STM32F10X_CL,USE_STDPERIPH_DRIVER,VECT_OFFSET</Define>
+              <Define>STM32F10X_CL,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\BoardCfg;..\Embedded\drivers\inc;..\Embedded\utilities;..\FreeRTOS\include;..\FreeRTOS\portable\Keil\ARM_CM3;..\StmLib\STM32F10x_StdPeriph_Driver\inc;..\StmLib\CMSIS;..\FreeRTOS\FreeRTOS-Plus-CLI</IncludePath>
+              <IncludePath>..\BoardCfg;..\StmLib\STM32F10x_StdPeriph_Driver\inc;..\StmLib\CMSIS;..\FreeRTOS\include;..\FreeRTOS\portable\Keil\ARM_CM3;..\FreeRTOS\FreeRTOS-Plus-CLI;..\Embedded\utilities;..\Embedded\drivers\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -834,59 +834,59 @@
               <FilePath>..\Embedded\platform\version.h</FilePath>
             </File>
             <File>
-              <FileName>driver_led.c</FileName>
+              <FileName>fifo.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Embedded\drivers\src\driver_led.c</FilePath>
+              <FilePath>..\Embedded\utilities\fifo.c</FilePath>
             </File>
             <File>
-              <FileName>driver_led.h</FileName>
+              <FileName>fifo.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Embedded\drivers\inc\driver_led.h</FilePath>
+              <FilePath>..\Embedded\utilities\fifo.h</FilePath>
             </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Drivers</GroupName>
+          <Files>
             <File>
-              <FileName>app_led.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Embedded\apps\app_led.c</FilePath>
-            </File>
-            <File>
-              <FileName>app_led.h</FileName>
+              <FileName>driver_uart1.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Embedded\apps\app_led.h</FilePath>
+              <FilePath>..\Embedded\drivers\inc\driver_uart1.h</FilePath>
             </File>
             <File>
-              <FileName>driver_uart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Embedded\drivers\src\driver_uart.c</FilePath>
-            </File>
-            <File>
-              <FileName>driver_uart.h</FileName>
+              <FileName>driver_uart2.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Embedded\drivers\inc\driver_uart.h</FilePath>
+              <FilePath>..\Embedded\drivers\inc\driver_uart2.h</FilePath>
             </File>
             <File>
-              <FileName>app_serial.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Embedded\apps\app_serial.c</FilePath>
-            </File>
-            <File>
-              <FileName>app_serial.h</FileName>
+              <FileName>uart_common.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\Embedded\apps\app_serial.h</FilePath>
+              <FilePath>..\Embedded\drivers\inc\uart_common.h</FilePath>
             </File>
             <File>
-              <FileName>app_cli.c</FileName>
+              <FileName>driver_uart1.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Embedded\apps\app_cli.c</FilePath>
+              <FilePath>..\Embedded\drivers\src\driver_uart1.c</FilePath>
             </File>
             <File>
-              <FileName>CLI_Commands.c</FileName>
+              <FileName>driver_uart2.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Embedded\apps\CLI_Commands.c</FilePath>
+              <FilePath>..\Embedded\drivers\src\driver_uart2.c</FilePath>
             </File>
             <File>
-              <FileName>UartCommandSever.c</FileName>
+              <FileName>uart_common.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Embedded\apps\UartCommandSever.c</FilePath>
+              <FilePath>..\Embedded\drivers\src\uart_common.c</FilePath>
+            </File>
+            <File>
+              <FileName>drivers.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Embedded\drivers\inc\drivers.h</FilePath>
+            </File>
+            <File>
+              <FileName>drivers.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\drivers\src\drivers.c</FilePath>
             </File>
           </Files>
         </Group>

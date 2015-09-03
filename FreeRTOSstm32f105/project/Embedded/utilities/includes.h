@@ -27,22 +27,29 @@ extern "C"{
 #endif
 #endif /* __cplusplus */
 
+//include standard hearders
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
+//includes freeRTOS headers
 #include "defines.h"
 #include "queue.h"
 #include "list.h"
 #include "semphr.h"
 
+//incudes stm32 headers
 #include "stm32f10x.h"
-#include "driver_uart.h"
-#include "../apps/app_led.h"
-#include "../apps/app_serial.h"
-#include "../apps/UartCommandSever.h"
-#include "../apps/CLI_Commands.h"
-#include "../apps/app_cli.h"
+
+//includes utilities headers
+#include "fifo.h"
+
+//includes driver headers
+#include "drivers.h"
+
+
+//includes apps headers
 
 #ifdef __cplusplus
 #if __cplusplus
