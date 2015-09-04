@@ -1,23 +1,21 @@
 /******************************************************************************
 
   Copyright (C), 2005-2014, CVTE.
-
+  
  ******************************************************************************
-  File Name     : driver_uart2.c
+  File Name     : spi_common.h
   Version       : Initial Draft
   Author        : qiuweibo
-  Created       : 2015/9/2
+  Created       : 2015/9/4
   Last Modified :
-  Description   : uart2 driver
+  Description   : spi_common.c header file
   Function List :
   History       :
-  1.Date        : 2015/9/2
+  1.Date        : 2015/9/4
     Author      : qiuweibo
     Modification: Created file
 
 ******************************************************************************/
-#include "uart_common.h"
-#include "driver_uart2.h"
 
 /*----------------------------------------------*
  * external variables                           *
@@ -51,39 +49,22 @@
  * routines' implementations                    *
  *----------------------------------------------*/
 
-int Uart2Init(void)
-{
+#ifndef __SPI_COMMON_H__
+#define __SPI_COMMON_H__
 
-    return 0;
+
+#ifdef __cplusplus
+#if __cplusplus
+extern "C"{
+#endif
+#endif /* __cplusplus */
+
+
+#ifdef __cplusplus
+#if __cplusplus
 }
+#endif
+#endif /* __cplusplus */
 
-int Uart2Open(void)
-{
 
-    return 0;
-}
-
-int Uart2Read(void)
-{
-
-    return 0;
-}
-
-int Uart2Write(void)
-{
-
-    return 0;
-}
-
-int Uart2Ctrl(void)
-{
-
-    return 0;
-}
-
-int Uart2Close(void)
-{
-
-    return 0;
-}
-
+#endif /* __SPI_COMMON_H__ */
