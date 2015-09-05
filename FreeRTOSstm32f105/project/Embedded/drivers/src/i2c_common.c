@@ -17,6 +17,9 @@
 
 ******************************************************************************/
 
+#include "includes.h"
+#include "i2c_common.h"
+
 /*----------------------------------------------*
  * external variables                           *
  *----------------------------------------------*/
@@ -49,3 +52,17 @@
  * routines' implementations                    *
  *----------------------------------------------*/
 
+int I2CDeviceDefaultInit(I2C_DEVICE_TypeDef *pDevice)
+{
+    return 0;
+}
+
+int I2CCommonInit(const I2C_DEVICE_TypeDef *pDevice)
+{
+    return 0;
+}
+
+int I2CCommonTerminate(const I2C_DEVICE_TypeDef *pDevice)
+{
+    return 0;
+}

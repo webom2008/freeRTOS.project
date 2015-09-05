@@ -17,6 +17,9 @@
 
 ******************************************************************************/
 
+#include "includes.h"
+#include "spi_common.h"
+
 /*----------------------------------------------*
  * external variables                           *
  *----------------------------------------------*/
@@ -49,3 +52,18 @@
  * routines' implementations                    *
  *----------------------------------------------*/
 
+
+int SpiDeviceDefaultInit(SPI_DEVICE_TypeDef *pDevice)
+{
+    return 0;
+}
+
+int SpiCommonInit(const SPI_DEVICE_TypeDef *pDevice)
+{
+    return 0;
+}
+
+int SpiCommonTerminate(const SPI_DEVICE_TypeDef *pDevice)
+{
+    return 0;
+}

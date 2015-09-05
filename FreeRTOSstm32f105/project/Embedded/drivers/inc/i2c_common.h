@@ -17,38 +17,6 @@
 
 ******************************************************************************/
 
-/*----------------------------------------------*
- * external variables                           *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * external routine prototypes                  *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * internal routine prototypes                  *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * project-wide global variables                *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * module-wide global variables                 *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * constants                                    *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * macros                                       *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * routines' implementations                    *
- *----------------------------------------------*/
-
 #ifndef __I2C_COMMON_H__
 #define __I2C_COMMON_H__
 
@@ -59,6 +27,32 @@ extern "C"{
 #endif
 #endif /* __cplusplus */
 
+
+#include <stdbool.h>
+#include "stm32f10x.h"
+
+
+typedef enum
+{
+    I2C_NUM01 = 0,
+    I2C_NUM02,
+    I2C_NUM03,
+
+    I2C_NUM_MAX
+} I2C_NUM_DEF;
+
+typedef struct _I2C_DEVICE_TypeDef_
+{
+    I2C_NUM_DEF num;
+} I2C_DEVICE_TypeDef;
+
+
+
+int I2CDeviceDefaultInit(I2C_DEVICE_TypeDef *pDevice);
+
+int I2CCommonInit(const I2C_DEVICE_TypeDef *pDevice);
+
+int I2CCommonTerminate(const I2C_DEVICE_TypeDef *pDevice);
 
 #ifdef __cplusplus
 #if __cplusplus

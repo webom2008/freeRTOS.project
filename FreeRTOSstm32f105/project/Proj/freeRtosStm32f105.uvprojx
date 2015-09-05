@@ -854,21 +854,6 @@
           <GroupName>Drivers</GroupName>
           <Files>
             <File>
-              <FileName>driver_uart1.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Embedded\drivers\inc\driver_uart1.h</FilePath>
-            </File>
-            <File>
-              <FileName>driver_uart2.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Embedded\drivers\inc\driver_uart2.h</FilePath>
-            </File>
-            <File>
-              <FileName>uart_common.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Embedded\drivers\inc\uart_common.h</FilePath>
-            </File>
-            <File>
               <FileName>driver_uart1.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Embedded\drivers\src\driver_uart1.c</FilePath>
@@ -879,19 +864,24 @@
               <FilePath>..\Embedded\drivers\src\driver_uart2.c</FilePath>
             </File>
             <File>
-              <FileName>uart_common.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Embedded\drivers\src\uart_common.c</FilePath>
-            </File>
-            <File>
-              <FileName>drivers.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Embedded\drivers\inc\drivers.h</FilePath>
-            </File>
-            <File>
               <FileName>drivers.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Embedded\drivers\src\drivers.c</FilePath>
+            </File>
+            <File>
+              <FileName>i2c_common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\drivers\src\i2c_common.c</FilePath>
+            </File>
+            <File>
+              <FileName>spi_common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\drivers\src\spi_common.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart_common.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Embedded\drivers\src\uart_common.c</FilePath>
             </File>
           </Files>
         </Group>

@@ -42,9 +42,9 @@
  *----------------------------------------------*/
 static UART_DEVICE_TypeDef uart1_device;
 static char uart1_tx_buffer[128];
-static FIFO_StructDef uart1_tx_fifo;
+static CHAR_FIFO_StructDef uart1_tx_fifo;
 static char uart1_rx_buffer[128];
-static FIFO_StructDef uart1_rx_fifo;
+static CHAR_FIFO_StructDef uart1_rx_fifo;
 
 /*----------------------------------------------*
  * constants                                    *
@@ -61,14 +61,8 @@ static FIFO_StructDef uart1_rx_fifo;
 
 static void Uart1BufferInit(void)
 {
-    gp_fifo_init(   &uart1_tx_fifo, 
-                    uart1_tx_buffer,
-                    sizeof(uart1_tx_buffer[0]),
-                    sizeof(uart1_tx_buffer)/sizeof(uart1_tx_buffer[0]));
-    gp_fifo_init(   &uart1_rx_fifo, 
-                    uart1_rx_buffer,
-                    sizeof(uart1_rx_buffer[0]),
-                    sizeof(uart1_rx_buffer)/sizeof(uart1_rx_buffer[0]));
+    char_fifo_init(&uart1_tx_fifo, uart1_tx_buffer, sizeof(uart1_tx_buffer));
+    char_fifo_init(&uart1_rx_fifo, uart1_rx_buffer, sizeof(uart1_rx_buffer));
 }
 
 /*****************************************************************************
@@ -161,7 +155,7 @@ int Uart1Read(char *pReadData, const int nDataLen)
     
     for (i=0; i < nDataLen; i++)
     {
-        ret = gp_fifo_pop(&uart1_rx_fifo, pReadData++);
+        ret = char_fifo_pop(&uart1_rx_fifo, pReadData++);
         if(ret < 0) break;
     }
     
@@ -196,7 +190,7 @@ int Uart1Write(char *pWriteData, const int nDataLen)
     
     for (i=0; i < nDataLen; i++)
     {
-        gp_fifo_push(&uart1_tx_fifo, pData++);
+        char_fifo_push(&uart1_tx_fifo, pData++);
     }
     USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
     return i;
@@ -256,7 +250,7 @@ void USART1_IRQHandler(void)
     if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)
     {
         temp = USART_ReceiveData(USART1);
-        gp_fifo_push(&uart1_rx_fifo, &temp);
+        char_fifo_push(&uart1_rx_fifo, &temp);
         if(USART_GetFlagStatus(USART1, USART_FLAG_ORE) != RESET)
         {
             USART_ClearFlag(USART1, USART_FLAG_ORE);
@@ -266,7 +260,7 @@ void USART1_IRQHandler(void)
   
     if(USART_GetITStatus(USART1, USART_IT_TXE) != RESET)
     {
-        ret = gp_fifo_pop(&uart1_tx_fifo, &temp);
+        ret = char_fifo_pop(&uart1_tx_fifo, &temp);
         if(ret < 0) //empty
         {
             USART_ITConfig(USART1, USART_IT_TXE, DISABLE);

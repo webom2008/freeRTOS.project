@@ -17,38 +17,6 @@
 
 ******************************************************************************/
 
-/*----------------------------------------------*
- * external variables                           *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * external routine prototypes                  *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * internal routine prototypes                  *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * project-wide global variables                *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * module-wide global variables                 *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * constants                                    *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * macros                                       *
- *----------------------------------------------*/
-
-/*----------------------------------------------*
- * routines' implementations                    *
- *----------------------------------------------*/
-
 #ifndef __SPI_COMMON_H__
 #define __SPI_COMMON_H__
 
@@ -59,6 +27,31 @@ extern "C"{
 #endif
 #endif /* __cplusplus */
 
+#include <stdbool.h>
+#include "stm32f10x.h"
+
+
+typedef enum
+{
+    SPI_NUM01 = 0,
+    SPI_NUM02,
+    SPI_NUM03,
+
+    SPI_NUM_MAX
+} SPI_NUM_DEF;
+
+typedef struct _SPI_DEVICE_TypeDef_
+{
+    SPI_NUM_DEF num;
+} SPI_DEVICE_TypeDef;
+
+
+
+int SpiDeviceDefaultInit(SPI_DEVICE_TypeDef *pDevice);
+
+int SpiCommonInit(const SPI_DEVICE_TypeDef *pDevice);
+
+int SpiCommonTerminate(const SPI_DEVICE_TypeDef *pDevice);
 
 #ifdef __cplusplus
 #if __cplusplus

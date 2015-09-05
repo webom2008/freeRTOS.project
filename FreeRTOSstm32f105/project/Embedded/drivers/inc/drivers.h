@@ -31,6 +31,9 @@ extern "C"{
 #include "driver_uart1.h"
 #include "driver_uart2.h"
 
+#include "spi_common.h"
+
+#include "i2c_common.h"
 
 int DriverMoudleInit(void);
 
