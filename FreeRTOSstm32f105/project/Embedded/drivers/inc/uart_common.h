@@ -55,6 +55,12 @@ typedef enum
     B230400 = 230400u
 } UART_BAUDRATE_DEF;
 
+typedef enum
+{
+    PARITY_NONE  = 0,
+    PARITY_ODD, //奇校验
+    PARITY_EVEN //偶校验
+} UART_PARITY_DEF;
 
 typedef struct _UART_DMA_BUFFER_DEF_
 {
@@ -73,6 +79,7 @@ typedef struct _UART_DEVICE_DEF_
     UART_NUM_DEF num;
     UART_WORK_MODE_DEF mode;
     UART_BAUDRATE_DEF baudrate;
+    UART_PARITY_DEF ParityType;
     UART_DMA_BUFFER_TypeDef *pTxDMABuffer;
     UART_DMA_BUFFER_TypeDef *pRxDMABuffer;
     bool IsDeviceOpen;

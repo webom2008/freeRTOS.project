@@ -107,6 +107,7 @@ int Uart1Init(void)
     uart1_device.num            = UART_NUM01;
     uart1_device.mode           = UART_DMA_MODE;
     uart1_device.baudrate       = B230400;
+    uart1_device.ParityType     = PARITY_NONE; //PARITY_NONE,PARITY_EVEN ,PARITY_ODD;
     uart1_device.IRQPriority    = IRQPriority10Uart1;
     uart1_device.pTxDMABuffer   = &uart1_tx_dma_buf;
     uart1_device.pRxDMABuffer   = &uart1_rx_dma_buf;
@@ -318,6 +319,7 @@ void USART1_IRQHandler(void)
     // uart idle interrupt
     if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)
     {
+        USART_ClearITPendingBit(USART1, USART_IT_IDLE);
         DMA_ClearFlag(DMA1_FLAG_GL5);//clear all interrupt flags     
         DMA_Cmd(DMA1_Channel5, DISABLE); //close DMA incase receive data while handling
         
@@ -375,12 +377,17 @@ void USART1_IRQHandler(void)
     }// End if USART_IT_IDLE
 
     // error happen
-    if(USART_GetITStatus(USART1, USART_IT_PE | USART_IT_FE | USART_IT_NE) != RESET)
+    if(USART_GetITStatus(USART1, USART_IT_PE) != RESET)
     {
-        USART_ClearITPendingBit(USART1, USART_IT_PE | USART_IT_FE | USART_IT_NE);
+        USART_ClearITPendingBit(USART1, USART_IT_PE);
+//        udprintf("\r\n===============Uart1.Parity error");
     }
     
-    USART_ClearITPendingBit(USART1, USART_IT_IDLE);
+    if(USART_GetITStatus(USART1, USART_IT_FE | USART_IT_NE) != RESET)
+    {
+        USART_ClearITPendingBit(USART1, USART_IT_FE | USART_IT_NE);
+    }
+    
 }
 
 /*****************************************************************************

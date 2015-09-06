@@ -186,13 +186,32 @@ static int UartCommonConfig(const UART_DEVICE_TypeDef *pUartDevice)
     }
     
 	USART_InitStructure.USART_BaudRate = pUartDevice->baudrate;
-	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    if (PARITY_EVEN == pUartDevice->ParityType)
+    {
+    	USART_InitStructure.USART_WordLength = USART_WordLength_9b;
+    	USART_InitStructure.USART_Parity = USART_Parity_Even;
+    }
+    else if (PARITY_ODD == pUartDevice->ParityType)
+    {
+    	USART_InitStructure.USART_WordLength = USART_WordLength_9b;
+    	USART_InitStructure.USART_Parity = USART_Parity_Odd;
+    }
+    else
+    {
+    	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    	USART_InitStructure.USART_Parity = USART_Parity_No;
+    }
 	USART_InitStructure.USART_StopBits = USART_StopBits_1;
-	USART_InitStructure.USART_Parity = USART_Parity_No ;
 	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 	
 	USART_Init(UART_GPIO[pUartDevice->num].UARTx, &USART_InitStructure );
+
+    if (PARITY_NONE != pUartDevice->ParityType)
+    {
+        //enable parity error interrupt
+        USART_ITConfig(UART_GPIO[pUartDevice->num].UARTx, USART_IT_PE , ENABLE);
+    }
 
     if (UART_INTERRUPT_MODE == pUartDevice->mode)
     {
@@ -372,6 +391,7 @@ int UartDeviceDefaultInit(UART_DEVICE_TypeDef *pUartDevice)
     pUartDevice->num            = UART_NUM01;
     pUartDevice->mode           = UART_INTERRUPT_MODE;
     pUartDevice->baudrate       = B115200;
+    pUartDevice->ParityType     = PARITY_NONE;
     pUartDevice->pRxDMABuffer   = NULL;
     pUartDevice->pTxDMABuffer   = NULL;
     pUartDevice->IRQPriority    = 15; //lowest level
@@ -516,6 +536,12 @@ static void UartCommonDMATerminate(const UART_DEVICE_TypeDef *pUartDevice)
 
 static void UartCommonUARTTerminate(const UART_DEVICE_TypeDef *pUartDevice)
 {
+    if (PARITY_NONE != pUartDevice->ParityType)
+    {
+        //enable parity error interrupt
+        USART_ITConfig(UART_GPIO[pUartDevice->num].UARTx, USART_IT_PE , DISABLE);
+    }
+    
     if (UART_INTERRUPT_MODE == pUartDevice->mode)
     {
         USART_Cmd(UART_GPIO[pUartDevice->num].UARTx, DISABLE);

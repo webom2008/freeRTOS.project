@@ -89,6 +89,7 @@ int Uart1Init(void)
     uart1_device.mode       = UART_INTERRUPT_MODE;
 //    uart1_device.mode       = UART_DMA_MODE;
     uart1_device.baudrate   = B230400;
+    uart1_device.ParityType = PARITY_NONE; //PARITY_NONE,PARITY_EVEN ,PARITY_ODD;
     uart1_device.IRQPriority= IRQPriority10Uart1;
     
     return 0;
@@ -270,6 +271,19 @@ void USART1_IRQHandler(void)
             USART_SendData(USART1, temp);
         }
     }
+    
+    // error happen
+    if(USART_GetITStatus(USART1, USART_IT_PE) != RESET)
+    {
+        USART_ClearITPendingBit(USART1, USART_IT_PE);
+//        udprintf("\r\n===============Uart1.Parity error");
+    }
+    
+    if(USART_GetITStatus(USART1, USART_IT_FE | USART_IT_NE) != RESET)
+    {
+        USART_ClearITPendingBit(USART1, USART_IT_FE | USART_IT_NE);
+    }
+    
 }
 
 #if 1 // user define printf
